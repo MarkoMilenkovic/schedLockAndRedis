@@ -6,7 +6,7 @@ import org.springframework.data.redis.core.index.Indexed;
 
 import java.util.Objects;
 
-@RedisHash(value = "Student", timeToLive = 3)
+@RedisHash(value = "Student")
 public class Student {
 
     private String id;
