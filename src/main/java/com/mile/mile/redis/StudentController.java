@@ -1,10 +1,12 @@
 package com.mile.mile.redis;
 
+import com.mile.mile.redis.pub_sub.MessagePublisher;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
@@ -12,15 +14,19 @@ import java.util.stream.Collectors;
 public class StudentController {
 
     private final StudentRepository studentRepository;
+    private final MessagePublisher messagePublisher;
 
-    public StudentController(StudentRepository studentRepository) {
+    public StudentController(StudentRepository studentRepository, MessagePublisher messagePublisher) {
         this.studentRepository = studentRepository;
+        this.messagePublisher = messagePublisher;
     }
 
     @GetMapping
     public List<Student> getAllStudents() {
         List<Student> all = studentRepository.findAll();
         all.removeIf(Objects::isNull);
+        String message = "Message " + UUID.randomUUID();
+        messagePublisher.publish(message);
         return all;
 //                .stream()
 //                .filter(Objects::nonNull)
