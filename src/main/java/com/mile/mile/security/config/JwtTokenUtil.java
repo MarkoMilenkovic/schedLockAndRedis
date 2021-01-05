@@ -1,8 +1,6 @@
 package com.mile.mile.security.config;
 
-import com.mile.mile.security.dao.UserRefreshTokenRepository;
 import com.mile.mile.security.entity.UserEntity;
-import com.mile.mile.security.entity.UserRefreshToken;
 import com.mile.mile.security.model.TokenModel;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -21,7 +19,7 @@ public class JwtTokenUtil implements Serializable {
 
 	private static final long serialVersionUID = -2550185165626007488L;
 
-	public static final long JWT_TOKEN_VALIDITY = 5 * 60 * 60;
+	public static final long JWT_TOKEN_VALIDITY_IN_SECONDS = 5;
 
 	@Value("${jwt.secret}")
 	private String secret;
@@ -55,7 +53,7 @@ public class JwtTokenUtil implements Serializable {
 	@Transactional
 	public TokenModel generateToken(UserEntity userEntity, String refreshToken) {
 		Map<String, Object> claims = new HashMap<>();
-		Date expirationDate = new Date(System.currentTimeMillis() + JWT_TOKEN_VALIDITY * 1000);
+		Date expirationDate = new Date(System.currentTimeMillis() + JWT_TOKEN_VALIDITY_IN_SECONDS * 1000);
 		String tokenString = doGenerateToken(claims, userEntity.getUsername(), expirationDate);
 		return new TokenModel(tokenString, expirationDate.getTime(), refreshToken);
 	}
