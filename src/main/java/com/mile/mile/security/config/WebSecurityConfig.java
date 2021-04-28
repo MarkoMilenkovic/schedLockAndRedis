@@ -1,13 +1,21 @@
 package com.mile.mile.security.config;
 
+import com.mile.mile.security.service.UserDetailsServiceImpl;
+import org.apache.shiro.authc.credential.DefaultPasswordService;
+import org.apache.shiro.crypto.hash.DefaultHashService;
+import org.apache.shiro.crypto.hash.format.DefaultHashFormatFactory;
+import org.apache.shiro.crypto.hash.format.Shiro1CryptFormat;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -17,42 +25,67 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
-	private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
-	private JwtRequestFilter jwtRequestFilter;
+    private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    private JwtRequestFilter jwtRequestFilter;
 
-	public WebSecurityConfig(JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint,
-							 JwtRequestFilter jwtRequestFilter
-	) {
-		this.jwtAuthenticationEntryPoint = jwtAuthenticationEntryPoint;
-		this.jwtRequestFilter = jwtRequestFilter;
-	}
+    public WebSecurityConfig(JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint,
+                             JwtRequestFilter jwtRequestFilter
+    ) {
+        this.jwtAuthenticationEntryPoint = jwtAuthenticationEntryPoint;
+        this.jwtRequestFilter = jwtRequestFilter;
+    }
 
-	@Bean
-	public PasswordEncoder passwordEncoder() {
-		return new BCryptPasswordEncoder();
-	}
+    //	@Bean
+//	public PasswordEncoder passwordEncoder() {
+//		return new BCryptPasswordEncoder();
+//	}
 
-	@Bean
-	@Override
-	public AuthenticationManager authenticationManagerBean() throws Exception {
-		return super.authenticationManagerBean();
-	}
+    @Bean
+    public DefaultPasswordService defaultPasswordService() {
+        DefaultPasswordService defaultPasswordService = new DefaultPasswordService();
+        defaultPasswordService.setHashFormat(new Shiro1CryptFormat());
+        defaultPasswordService.setHashService(new DefaultHashService());
+        defaultPasswordService.setHashFormatFactory(new DefaultHashFormatFactory());
+        return defaultPasswordService;
+    }
 
-	@Override
-	protected void configure(HttpSecurity httpSecurity) throws Exception {
-		// We don't need CSRF for this example
-		httpSecurity.csrf().disable()
-				// dont authenticate this particular request
-				.authorizeRequests().antMatchers("/login", "/register").permitAll()
-				.antMatchers("/student/**").hasAuthority("USER")
-				// all other requests need to be authenticated
-				.anyRequest().authenticated().and()
-				// make sure we use stateless session; session won't be used to
-				// store user's state.
-				.exceptionHandling().authenticationEntryPoint(jwtAuthenticationEntryPoint).and().sessionManagement()
-				.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+    @Bean
+    public CustomPasswordEncoder customPasswordEncoder() {
+        return new CustomPasswordEncoder(defaultPasswordService());
+    }
 
-		// Add a filter to validate the tokens with every request
-		httpSecurity.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
-	}
+    @Autowired
+    private UserDetailsService userDetailsService;
+
+    @Bean
+    public DaoAuthenticationProvider authProvider() {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(userDetailsService);
+        authProvider.setPasswordEncoder(customPasswordEncoder());
+        return authProvider;
+    }
+
+    @Bean
+    @Override
+    public AuthenticationManager authenticationManagerBean() throws Exception {
+        return super.authenticationManagerBean();
+    }
+
+    @Override
+    protected void configure(HttpSecurity httpSecurity) throws Exception {
+        // We don't need CSRF for this example
+        httpSecurity.csrf().disable()
+                // dont authenticate this particular request
+                .authorizeRequests().antMatchers("/login", "/register").permitAll()
+                .antMatchers("/student/**").hasAuthority("USER")
+                // all other requests need to be authenticated
+                .anyRequest().authenticated().and()
+                // make sure we use stateless session; session won't be used to
+                // store user's state.
+                .exceptionHandling().authenticationEntryPoint(jwtAuthenticationEntryPoint).and().sessionManagement()
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+
+        // Add a filter to validate the tokens with every request
+        httpSecurity.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
+    }
 }

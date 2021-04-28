@@ -23,7 +23,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     private UserDao userDao;
     private JwtTokenUtil jwtTokenUtil;
-    private PasswordEncoder passwordEncoder;
+    private PasswordEncoder customPasswordEncoder;
 	private final UserRefreshTokenRepository userRefreshTokenRepository;
 
 
@@ -31,7 +31,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 								  UserRefreshTokenRepository userRefreshTokenRepository
 	) {
         this.userDao = userDao;
-        this.passwordEncoder = passwordEncoder;
+        this.customPasswordEncoder = passwordEncoder;
         this.jwtTokenUtil = jwtTokenUtil;
         this.userRefreshTokenRepository = userRefreshTokenRepository;
     }
@@ -57,7 +57,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     public UserEntity save(UserModel user) {
         UserEntity newUserEntity = new UserEntity();
         newUserEntity.setUsername(user.getUsername());
-        newUserEntity.setPassword(passwordEncoder.encode(user.getPassword()));
+        newUserEntity.setPassword(customPasswordEncoder.encode(user.getPassword()));
         return userDao.save(newUserEntity);
     }
 
