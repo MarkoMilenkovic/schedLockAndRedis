@@ -1,0 +1,43 @@
+version: '3'
+services:
+  redis-server:
+    restart: always
+    container_name: redis
+    image: 'redis'
+    ports:
+      - "6379:6379"
+  mysqldb:
+    image: mysql:5.7
+    restart: always
+    environment:
+       MYSQL_ROOT_PASSWORD: root
+       MYSQL_DATABASEL: practice
+       MYSQL_USER: root
+       MYSQL_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data_volume:/var/lib/mysql
+  java-service:
+    build: .
+    depends_on:
+      - mysqldb
+    links:
+      - redis-server
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysqldb:3306/practice?useSSL=false
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MySQL5InnoDBDialect
+#      SPRING_APPLICATION_JSON: '{
+#        "spring.datasource.url"  : "jdbc:mysql://mysqldb:3306/practice?useSSL=false",
+#        "spring.datasource.username" : "root",
+#        "spring.datasource.password" : "root",
+#        "spring.jpa.properties.hibernate.dialect" : "org.hibernate.dialect.MySQL5InnoDBDialect"
+#      }'
+    ports:
+      - "8080:8080"
+
+volumes:
+  mysql_data_volume:
+    driver: local
